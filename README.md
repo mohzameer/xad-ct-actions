@@ -55,10 +55,14 @@ It prints each subject with its document count, node and edge counts, and every
 integrity finding, then writes the exact payloads it would have sent.
 
 ```
-2 subject(s) under /Users/me/awssims/ct  local refs/heads/local local
-hum  42 documents [system 12, decision 9, ...]  50 nodes, 91 edges  lifecycle:live  1 error(s), 7 warning(s)
+Found 2 subject(s) in ct/
+  local refs/heads/local local
+  hum — 42 docs, 50 nodes, 16 error(s), 7 warning(s)
   ERROR  orphan_node  path=ct/hum/content/hum-content-wiring.yml node=hum-client-web
   dry run: not published
+  spool — 28 docs, 35 nodes, 11 error(s), 8 warning(s)
+  dry run: not published
+Done. 27 integrity error(s) across 2 subject(s).
 ```
 
 Integrity errors exit 0 — a broken state must reach CT so CT can show it. Only a

@@ -25,7 +25,7 @@ import { createHash } from 'node:crypto';
 import {
   existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync,
 } from 'node:fs';
-import { basename, dirname, extname, join, resolve } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
@@ -518,16 +518,11 @@ async function publish(payload, opts) {
 /* ------------------------------------------------------------- reporting - */
 
 function summarise(subject, documents, graph, integrity) {
-  const byType = {};
-  for (const doc of documents) byType[doc.type ?? 'untyped'] = (byType[doc.type ?? 'untyped'] ?? 0) + 1;
   const errors = integrity.filter((f) => f.severity === 'error').length;
   const warnings = integrity.length - errors;
 
   console.log(
-    `${subject.id}  ${documents.length} documents `
-    + `[${Object.entries(byType).map(([t, n]) => `${t} ${n}`).join(', ') || 'none'}]  `
-    + `${graph.nodes.length} nodes, ${graph.edges.length} edges  `
-    + `lifecycle:${subject.meta.lifecycle ?? '?'}  `
+    `  ${subject.id} — ${documents.length} docs, ${graph.nodes.length} nodes, `
     + `${errors} error(s), ${warnings} warning(s)`,
   );
 
@@ -567,13 +562,12 @@ async function main() {
     if (subjects.length === 0) fail(`No subjects found matching '${opts.subject}'`);
   }
 
-  console.log(
-    `${subjects.length} subject(s) under ${resolve(opts.root)}  `
-    + `${run.repo} ${run.ref} ${run.commit.slice(0, 7)}`,
-  );
+  console.log(`Found ${subjects.length} subject(s) in ${opts.root}/`);
+  console.log(`  ${run.repo} ${run.ref} ${run.commit.slice(0, 7)}`);
 
   /* One pipeline per subject, and one payload per subject. Merging them
    * collapses several subjects onto one key in CT. */
+  let totalErrors = 0;
   for (const subject of subjects) {
     const integrity = [];
     const report = (code, severity, detail) =>
@@ -586,6 +580,7 @@ async function main() {
     analyseContent(graph, report);
 
     const payload = assemble(subject, run, documents, links, graph, integrity);
+    totalErrors += integrity.filter((f) => f.severity === 'error').length;
     summarise(subject, documents, graph, integrity);
 
     if (opts.out) {
@@ -601,6 +596,10 @@ async function main() {
       console.log(`  published: ${status}`);
     }
   }
+
+  console.log(
+    `Done. ${totalErrors} integrity error(s) across ${subjects.length} subject(s).`,
+  );
 
   /* Integrity errors do not fail the build. A broken state must reach CT so
    * CT can show it; a green board because publishing was blocked is worse
