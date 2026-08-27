@@ -1,0 +1,68 @@
+name: 'XAD Control Tower — index documentation'
+description: >-
+  Parses this repository's ct/ tree and publishes one index per subject to
+  XAD Control Tower. Reads the repo it is called from; holds no credentials.
+author: 'XAD Labs'
+
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  ct-url:
+    description: 'Control Tower base URL. Pass from the calling repo''s secrets.'
+    required: true
+  ct-token:
+    description: 'Ingest token, minted in CT and scoped to this repo. Pass from secrets.'
+    required: true
+  root:
+    description: 'Document root to scan.'
+    required: false
+    default: 'ct'
+  subject:
+    description: 'Only index this subject id. Default: every subject found.'
+    required: false
+    default: ''
+  dry-run:
+    description: 'Parse and report, publish nothing. Use on pull requests.'
+    required: false
+    default: 'false'
+  out:
+    description: 'Write each payload to <out>/<subject>.json as well as publishing.'
+    required: false
+    default: ''
+  node-version:
+    description: 'Node version to run the parser on.'
+    required: false
+    default: '20'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # The parser's own dependencies, installed inside the action's checkout —
+    # never in the calling repo's tree. package-lock.json is committed here,
+    # which is what makes `npm ci` possible at all.
+    - name: Install parser dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci --omit=dev
+
+    - name: Index and publish
+      shell: bash
+      env:
+        CT_URL: ${{ inputs.ct-url }}
+        CT_TOKEN: ${{ inputs.ct-token }}
+        CT_ROOT: ${{ inputs.root }}
+        CT_SUBJECT: ${{ inputs.subject }}
+        CT_OUT: ${{ inputs.out }}
+        CT_DRY_RUN: ${{ inputs.dry-run }}
+      run: |
+        args=(--root "$CT_ROOT")
+        if [ -n "$CT_SUBJECT" ]; then args+=(--subject "$CT_SUBJECT"); fi
+        if [ -n "$CT_OUT" ]; then args+=(--out "$CT_OUT"); fi
+        if [ "$CT_DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+        node "$GITHUB_ACTION_PATH/bin/index.mjs" "${args[@]}"

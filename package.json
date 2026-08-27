@@ -1,0 +1,15 @@
+{
+  "name": "@xad/ct-actions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Parses a game repo's ct/ tree and publishes one index per subject to XAD Control Tower.",
+  "type": "module",
+  "bin": { "xad-ct-index": "bin/index.mjs" },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "index": "node bin/index.mjs"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
+  }
+}

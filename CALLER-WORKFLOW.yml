@@ -1,0 +1,38 @@
+# Index this repo's ct/ documentation into XAD Control Tower.
+#
+# INSTALL: copy to .github/workflows/index.yml in the game repo.
+#
+#   cp CALLER-WORKFLOW.yml .github/workflows/index.yml
+#
+# Requires two repository secrets, both minted in CT and scoped to this repo:
+#   CT_URL    e.g. https://ct.xadlabs.com
+#   CT_TOKEN  the ingest token
+#
+# A repo with several subjects needs no change here. The parser discovers every
+# ct/<id>/subject.yml and sends one payload per subject.
+
+name: Index docs
+
+on:
+  push:
+    paths:
+      - 'ct/**'
+  pull_request:
+    paths:
+      - 'ct/**'
+  workflow_dispatch:
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mohzameer/xad-ct-actions@v1
+        with:
+          ct-url: ${{ secrets.CT_URL }}
+          ct-token: ${{ secrets.CT_TOKEN }}
+          # Pull requests parse and report; only pushes publish. See PLAN.md §7
+          # — CT's index is keyed by ref, so branch state could be published
+          # instead. It is not, yet.
+          dry-run: ${{ github.event_name == 'pull_request' }}
