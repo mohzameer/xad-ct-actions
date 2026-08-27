@@ -74,6 +74,19 @@ node /path/to/xad-ct-actions/bin/index.mjs --root ct --dry-run --out /tmp/out
 Prints every subject, document count, node count and integrity error. Writes the
 exact payloads to `/tmp/out/<subject>.json` without touching CT.
 
+A dry run defaults to `repo: local`, `ref: refs/heads/local`, `commit: local`,
+which keeps it out of CT's real keyspace. To produce a payload you intend to
+ingest by hand — a first bring-up, or reproducing a run — say so explicitly:
+
+```bash
+GITHUB_REPOSITORY=mohzameer/racetoagi GITHUB_REF=refs/heads/main \
+GITHUB_SHA=$(git rev-parse HEAD) \
+node /path/to/xad-ct-actions/bin/index.mjs --root ct --dry-run --out /tmp/out
+```
+
+Without those, the payload lands under a repo the token's scope row does not
+cover, and CT answers 403 for what looks like a scoping bug.
+
 To test CT's ingest endpoint separately:
 
 ```bash
